@@ -432,6 +432,12 @@ namespace
 		return changed;
 	}
 
+	void LogBytes(const char* a_what, std::uintptr_t a_addr)
+	{
+		const auto* b = reinterpret_cast<const std::uint8_t*>(a_addr);
+		F4SE::log::error("{} bytes at {:X}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", a_what, a_addr, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+	}
+
 	bool PrologueMatches(std::uintptr_t a_address, const std::array<std::uint8_t, 8>& a_bytes)
 	{
 		return std::memcmp(reinterpret_cast<const void*>(a_address), a_bytes.data(), a_bytes.size()) == 0;
@@ -880,6 +886,26 @@ namespace
 
 	LoadedSink g_sink;
 
+	// VR: TESObjectLoadedEvent::GetEventSource (ID 416662) is not in the VR Address Library 1.14.0, and CommonLibF4VR's getter aborts the
+	// game on the missing ID. Its VR address comes from F4SE VR's GameEvents.h (0x42B8D0), one of the run of lazily built event source
+	// getters at 0x4298F0..0x42CD70 (same table puts TESDeathEvent at 0x42AC50 and TESFurnitureEvent at 0x42B330, as the VR Address
+	// Library does). Checked against the getter shape before it is called.
+	RE::BSTEventSource<RE::TESObjectLoadedEvent>* ObjectLoadedEventSource()
+	{
+		constexpr std::uintptr_t                kRva = 0x42B8D0;
+		constexpr std::array<std::uint8_t, 6>   kHead{ 0x48, 0x83, 0xEC, 0x28, 0x8B, 0x05 };  // sub rsp,28h; mov eax,[rip+guard]
+		constexpr std::array<std::uint8_t, 3>   kTest{ 0xA8, 0x01, 0x75 };                    // test al,1; jne
+		const auto                              addr = REL::Module::get().base() + kRva;
+		const auto*                             p = reinterpret_cast<const std::uint8_t*>(addr);
+		if (std::memcmp(p, kHead.data(), kHead.size()) != 0 || std::memcmp(p + 10, kTest.data(), kTest.size()) != 0) {
+			F4SE::log::error("TESObjectLoadedEvent source getter mismatch at {:X}", addr);
+			LogBytes("TESObjectLoadedEvent getter", addr);
+			return nullptr;
+		}
+		using func_t = RE::BSTEventSource<RE::TESObjectLoadedEvent>*();
+		return reinterpret_cast<func_t*>(addr)();
+	}
+
 	// Closing the looks menu writes the chosen skin tone as the player's new original and rebuilds the player once.
 	class MenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
@@ -939,12 +965,6 @@ namespace
 		const std::uint64_t back = a_addr + a_count;
 		std::memcpy(stub + a_count + sizeof(jmp), &back, sizeof(back));
 		return reinterpret_cast<T*>(stub);
-	}
-
-	void LogBytes(const char* a_what, std::uintptr_t a_addr)
-	{
-		const auto* b = reinterpret_cast<const std::uint8_t*>(a_addr);
-		F4SE::log::error("{} bytes at {:X}: {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", a_what, a_addr, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
 	}
 
 	void InstallAttachHook()
@@ -1092,11 +1112,11 @@ namespace
 			return;
 		}
 		if (a_msg->type == F4SE::MessagingInterface::kGameDataReady) {
-			if (auto* src = RE::TESObjectLoadedEvent::GetEventSource()) {
+			if (auto* src = ObjectLoadedEventSource()) {
 				src->RegisterSink(&g_sink);
 				F4SE::log::info("TESObjectLoadedEvent sink registered");
 			} else {
-				F4SE::log::error("TESObjectLoadedEvent source is null");
+				F4SE::log::error("TESObjectLoadedEvent source not available: actors loaded later are only tinted by the attach/head hooks");
 			}
 			RegisterReloadKey();
 			if (auto* ui = RE::UI::GetSingleton()) {
@@ -1140,7 +1160,7 @@ namespace
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
 	F4SE::PluginVersionData data{};
 	data.PluginName("HeadBodyColorMatch");
-	data.PluginVersion(REL::Version(1, 1, 0, 1));
+	data.PluginVersion(REL::Version(1, 1, 0, 2));
 	data.AuthorName("mrtony (VR port: Axel)");
 	data.UsesAddressLibrary(true);
 	data.IsLayoutDependent(true);
@@ -1152,7 +1172,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(const F4SE::Query
 {
 	a_info->infoVersion = F4SE::PluginInfo::kVersion;
 	a_info->name = "HeadBodyColorMatch";
-	a_info->version = 0x01010001;
+	a_info->version = 0x01010002;
 	if (a_f4se->IsEditor()) {
 		return false;
 	}
@@ -1169,7 +1189,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 	F4SE::AllocTrampoline(256);
 	g_mainThread = ::GetCurrentThreadId();
 
-	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 1) loaded on runtime {}", REL::Module::get().version().string());
+	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 2) loaded on runtime {}", REL::Module::get().version().string());
 	LoadSettings();
 	F4SE::GetMessagingInterface()->RegisterListener(OnMessage);
 	InstallAttachHook();

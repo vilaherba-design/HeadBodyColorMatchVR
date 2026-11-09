@@ -1,11 +1,12 @@
 # Builds HeadBodyColorMatch (FO4VR port) in %TEMP%, zips it to C:\Users\cereBRO\Modding and deletes the build tree.
 # Usage (PowerShell): .\build.ps1 -Src <folder with this project> [-CLib <existing CommonLibF4VR checkout at 9057052>]
 # Without -CLib it uses lib\CommonLibF4VR (git submodule) or clones it.
-param([Parameter(Mandatory)][string]$Src, [string]$Out = "C:\Users\cereBRO\Modding", [string]$CLib = "")
+param([Parameter(Mandatory)][string]$Src, [string]$Out = "C:\Users\cereBRO\Modding", [string]$CLib = "", [switch]$CleanSrc)
 $ErrorActionPreference = "Stop"
 $W = Join-Path $env:TEMP "hbcmvr"
 if (Test-Path $W) { Remove-Item $W -Recurse -Force }
 Copy-Item $Src $W -Recurse
+if ($CleanSrc) { Remove-Item $Src -Recurse -Force }  # the source now lives only in %TEMP%\hbcmvr
 if (-not $env:VCPKG_ROOT) { $env:VCPKG_ROOT = "E:\General\Lifestyle\Modding\Fallout 4\VR Version\Herramientas\vcpkg" }
 if (-not $CLib -and (Test-Path "$W\lib\CommonLibF4VR\CommonLibF4\include\REL\Relocation.h")) {
   # the submodule was checked out with the source (git clone --recursive): already copied with it
@@ -22,7 +23,7 @@ if ($LASTEXITCODE) { throw "configure failed" }
 cmake --build "$W\build" --config Release -- /m /v:m
 if ($LASTEXITCODE) { throw "build failed" }
 $dll = "$W\build\Release\HeadBodyColorMatch.dll"
-$zip = Join-Path $Out "HeadBodyColorMatchVR-1.1.0-vr1.zip"
+$zip = Join-Path $Out "HeadBodyColorMatchVR-1.1.0-vr2.zip"
 if (Test-Path $zip) { Remove-Item $zip }
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $z = [System.IO.Compression.ZipFile]::Open($zip, "Create")
@@ -46,3 +47,5 @@ foreach ($k in $files.Keys) { [void][System.IO.Compression.ZipFileExtensions]::C
 $z.Dispose()
 Get-Item $dll, $zip | Format-Table Name, Length
 Get-FileHash $zip -Algorithm SHA256 | Format-List
+Set-Location $env:TEMP
+Remove-Item $W -Recurse -Force  # leave no build tree behind
