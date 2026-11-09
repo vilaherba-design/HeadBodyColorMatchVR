@@ -1160,7 +1160,7 @@ namespace
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
 	F4SE::PluginVersionData data{};
 	data.PluginName("HeadBodyColorMatch");
-	data.PluginVersion(REL::Version(1, 1, 0, 2));
+	data.PluginVersion(REL::Version(1, 1, 0, 3));
 	data.AuthorName("mrtony (VR port: Axel)");
 	data.UsesAddressLibrary(true);
 	data.IsLayoutDependent(true);
@@ -1172,11 +1172,12 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(const F4SE::Query
 {
 	a_info->infoVersion = F4SE::PluginInfo::kVersion;
 	a_info->name = "HeadBodyColorMatch";
-	a_info->version = 0x01010002;
+	a_info->version = 0x01010003;
 	if (a_f4se->IsEditor()) {
 		return false;
 	}
-	if (a_f4se->RuntimeVersion() != F4SE::RUNTIME_VR_1_2_72) {
+	// VR: F4SE VR reports 1.10.138 (the flat build VR was forked from) rather than 1.2.72 here, so accept both.
+	if (const auto v = a_f4se->RuntimeVersion(); v != F4SE::RUNTIME_VR_1_2_72 && v != REL::Version(1, 10, 138)) {
 		return false;
 	}
 	return true;
@@ -1189,7 +1190,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 	F4SE::AllocTrampoline(256);
 	g_mainThread = ::GetCurrentThreadId();
 
-	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 2) loaded on runtime {}", REL::Module::get().version().string());
+	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 3) loaded on runtime {}", REL::Module::get().version().string());
 	LoadSettings();
 	F4SE::GetMessagingInterface()->RegisterListener(OnMessage);
 	InstallAttachHook();
