@@ -474,6 +474,7 @@ namespace
 			if (!shader || !shader->material) {
 				continue;
 			}
+			++g_dbgShaders;
 			auto* mat = shader->material;
 			if (mat->GetFeature() != RE::BSShaderMaterial::Feature::kSkinTint) {
 				continue;
@@ -521,13 +522,38 @@ namespace
 		return found;
 	}
 
+	// VR: CommonLibF4VR's Ni_RTTI::BSGeometry ID (1287097) resolves to 0x3884F18 in 1.2.72, which is not an NiRTTI, so
+	// netimmerse_cast<BSGeometry*> never matched and no shape was ever tinted (port 3 log: "25 actors, 0 skin-tint shapes").
+	// The real NiRTTI of BSGeometry is built at startup by the constructor call at 0x2B1D197 (name string in rdx, object in rcx):
+	// 0x5C62A30. The same arithmetic gives 0x5C61800 for NiNode and 0x6878018 for BSLightingShaderProperty, which are the
+	// addresses of their (correct) VR IDs. The name field is checked before the address is trusted.
+	constexpr std::uintptr_t kBSGeometryRttiRva = 0x5C62A30;
+
+	const RE::NiRTTI* BSGeometryRtti()
+	{
+		static const RE::NiRTTI* rtti = [] -> const RE::NiRTTI* {
+			const auto* r = reinterpret_cast<const RE::NiRTTI*>(REL::Module::get().base() + kBSGeometryRttiRva);
+			if (!r->name || std::strcmp(r->name, "BSGeometry") != 0) {
+				F4SE::log::error("BSGeometry NiRTTI not found at RVA {:X}: no shape will be tinted", kBSGeometryRttiRva);
+				return nullptr;
+			}
+			F4SE::log::info("BSGeometry NiRTTI at RVA {:X}", kBSGeometryRttiRva);
+			return r;
+		}();
+		return rtti;
+	}
+
+	std::atomic<int> g_dbgGeoms{ 0 };    // geometries reached by the walk (debug counters, logged after a rewalk)
+	std::atomic<int> g_dbgShaders{ 0 };  // of them, with a BSLightingShaderProperty that has a material
+
 	void Walk(RE::Actor* a_actor, RE::NiAVObject* a_obj, int a_depth, int& a_shapes)
 	{
 		if (!a_obj || a_depth > 32) {
 			return;
 		}
-		if (auto* geom = netimmerse_cast<RE::BSGeometry*>(a_obj)) {
-			if (ProcessGeometry(a_actor, geom)) {
+		if (const auto* geomRtti = BSGeometryRtti(); geomRtti && a_obj->GetRTTI() && a_obj->GetRTTI()->IsKindOf(geomRtti)) {
+			++g_dbgGeoms;
+			if (ProcessGeometry(a_actor, static_cast<RE::BSGeometry*>(a_obj))) {
 				++a_shapes;
 			}
 		}
@@ -686,7 +712,7 @@ namespace
 					shapes += WalkActor(actor.get());
 				}
 			}
-			F4SE::log::debug("[{}] rewalk done: {} actors, {} skin-tint shapes", a_path, actors, shapes);
+			F4SE::log::debug("[{}] rewalk done: {} actors, {} skin-tint shapes (walk totals so far: {} geometries, {} with a shader material)", a_path, actors, shapes, g_dbgGeoms.load(), g_dbgShaders.load());
 		} catch (...) {
 			F4SE::log::error("[{}] rewalk threw", a_path);
 		}
@@ -1160,7 +1186,7 @@ namespace
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
 	F4SE::PluginVersionData data{};
 	data.PluginName("HeadBodyColorMatch");
-	data.PluginVersion(REL::Version(1, 1, 0, 3));
+	data.PluginVersion(REL::Version(1, 1, 0, 4));
 	data.AuthorName("mrtony (VR port: Axel)");
 	data.UsesAddressLibrary(true);
 	data.IsLayoutDependent(true);
@@ -1172,7 +1198,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(const F4SE::Query
 {
 	a_info->infoVersion = F4SE::PluginInfo::kVersion;
 	a_info->name = "HeadBodyColorMatch";
-	a_info->version = 0x01010003;
+	a_info->version = 0x01010004;
 	if (a_f4se->IsEditor()) {
 		return false;
 	}
@@ -1185,12 +1211,12 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(const F4SE::Query
 
 extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_f4se)
 {
-	InitLog();
 	F4SE::Init(a_f4se, false);
+	InitLog();  // after Init: the log folder name needs F4SE's save folder name (port 3 wrote to My Games\\F4SE, without Fallout4VR)
 	F4SE::AllocTrampoline(256);
 	g_mainThread = ::GetCurrentThreadId();
 
-	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 3) loaded on runtime {}", REL::Module::get().version().string());
+	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 4) loaded on runtime {}", REL::Module::get().version().string());
 	LoadSettings();
 	F4SE::GetMessagingInterface()->RegisterListener(OnMessage);
 	InstallAttachHook();

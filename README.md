@@ -1,4 +1,4 @@
-Head Body Color Match 1.1.0 - Fallout 4 VR port (VR port 3)
+Head Body Color Match 1.1.0 - Fallout 4 VR port (VR port 4)
 ============================================================
 
 Original: mrtony - https://www.nexusmods.com/fallout4/mods/110802 (GPL-3.0 with the modding exception in EXCEPTIONS).
@@ -12,7 +12,9 @@ What changed from 1.1.0 (search "VR:" in src/main.cpp):
   unpacked Fallout4VR.exe 1.2.72; the plugin still checks them at run time and skips a hook that does not match.
 - TESObjectLoadedEvent's event source getter has no VR ID either: 0x42B8D0, from F4SE VR's GameEvents.h (VR port 2;
   port 1 aborted the game at startup on the missing ID 416662).
-- F4SEPlugin_Query accepts the runtime F4SE VR reports, 1.10.138, as well as 1.2.72 (VR port 3).
+- F4SEPlugin_Query accepts the runtime F4SE VR reports, 1.10.138, as well as 1.2.72 (VR port 4).
+- CommonLibF4VR's NiRTTI ID for BSGeometry is wrong in VR (resolves to 0x3884F18); the real one, 0x5C62A30, is used (VR port 4;
+  port 3 loaded and installed its hooks but never found a skin-tint shape). The log folder is created after F4SE init.
 - Actor::OnHeadInitialized has no VR ID: it is read from Actor's vtable, slot 0x98 (0xE0A140 in 1.2.72).
 - The skin tint material is 0x10 smaller in VR: tintColor is at 0xB0, not 0xC0.
 - The reload key (iReloadKey) is polled from the keyboard instead of a MenuControls handler (no VR ID for it).
