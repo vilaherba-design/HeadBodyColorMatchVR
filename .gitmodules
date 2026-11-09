@@ -1,0 +1,3 @@
+[submodule "lib/CommonLibF4VR"]
+	path = lib/CommonLibF4VR
+	url = https://github.com/ArthurHub/CommonLibF4VR.git

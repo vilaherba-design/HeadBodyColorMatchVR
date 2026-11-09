@@ -1,0 +1,11 @@
+{
+  "name": "headbodycolormatchvr",
+  "version-string": "1.1.0-vr1",
+  "dependencies": [
+    "rapidcsv",
+    "rsm-mmio",
+    "spdlog",
+    "xbyak"
+  ],
+  "builtin-baseline": "b4a3d89125e45bc8f80fb94bef9761d4f4e14fb9"
+}
