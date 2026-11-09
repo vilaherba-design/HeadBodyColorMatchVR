@@ -464,6 +464,9 @@ namespace
 	constexpr int                       kMainThreadMaxAttempts = 100;
 	constexpr std::chrono::milliseconds kMainThreadRetryDelay{ 100 };
 
+	std::atomic<int> g_dbgGeoms{ 0 };    // geometries reached by the walk (debug counters, logged after a rewalk)
+	std::atomic<int> g_dbgShaders{ 0 };  // of them, with a BSLightingShaderProperty that has a material
+
 	// Returns true when the geometry carries a skin-tint material.
 	bool ProcessGeometry(RE::Actor* a_actor, RE::BSGeometry* a_geom)
 	{
@@ -542,9 +545,6 @@ namespace
 		}();
 		return rtti;
 	}
-
-	std::atomic<int> g_dbgGeoms{ 0 };    // geometries reached by the walk (debug counters, logged after a rewalk)
-	std::atomic<int> g_dbgShaders{ 0 };  // of them, with a BSLightingShaderProperty that has a material
 
 	void Walk(RE::Actor* a_actor, RE::NiAVObject* a_obj, int a_depth, int& a_shapes)
 	{
