@@ -741,6 +741,12 @@ namespace
 			return;
 		}
 		last[a_id] = now;
+		// VR port 5: Reset3D frees the weapon fire node while EquippedWeaponData keeps a raw pointer to it (only Actor::RemoveWeapon clears it), so an NPC with a drawn weapon
+		// crashed later in CombatProjectileAimController. NPCs are therefore repainted in place on their existing 3D; only the player, out of combat, gets a real rebuild.
+		if (a_id != 0x14 || actor->IsInCombat()) {
+			WalkActor(actor);
+			return;
+		}
 		// reloadAll unloads and reloads the whole 3D, kHead puts the head in the rebuild so AttachSkinnedObject and OnHeadInitialized run again, queueReset leaves the rebuild to the game's reset queue.
 		actor->Reset3D(true, static_cast<std::uint32_t>(RE::RESET_3D_FLAGS::kHead), true, 0);
 	}
@@ -1186,7 +1192,7 @@ namespace
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
 	F4SE::PluginVersionData data{};
 	data.PluginName("HeadBodyColorMatch");
-	data.PluginVersion(REL::Version(1, 1, 0, 4));
+	data.PluginVersion(REL::Version(1, 1, 0, 5));
 	data.AuthorName("mrtony (VR port: Axel)");
 	data.UsesAddressLibrary(true);
 	data.IsLayoutDependent(true);
@@ -1198,7 +1204,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Query(const F4SE::Query
 {
 	a_info->infoVersion = F4SE::PluginInfo::kVersion;
 	a_info->name = "HeadBodyColorMatch";
-	a_info->version = 0x01010004;
+	a_info->version = 0x01010005;
 	if (a_f4se->IsEditor()) {
 		return false;
 	}
@@ -1216,7 +1222,7 @@ extern "C" __declspec(dllexport) bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadIn
 	F4SE::AllocTrampoline(256);
 	g_mainThread = ::GetCurrentThreadId();
 
-	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 4) loaded on runtime {}", REL::Module::get().version().string());
+	F4SE::log::info("Head Body Color Match 1.1.0 (VR port 5) loaded on runtime {}", REL::Module::get().version().string());
 	LoadSettings();
 	F4SE::GetMessagingInterface()->RegisterListener(OnMessage);
 	InstallAttachHook();
