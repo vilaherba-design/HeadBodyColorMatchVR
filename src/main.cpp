@@ -744,9 +744,11 @@ namespace
 		// VR port 5: Reset3D frees the weapon fire node while EquippedWeaponData keeps a raw pointer to it (only Actor::RemoveWeapon clears it), so an NPC with a drawn weapon
 		// crashed later in CombatProjectileAimController. NPCs are therefore repainted in place on their existing 3D; only the player, out of combat, gets a real rebuild.
 		if (a_id != 0x14 || actor->IsInCombat()) {
-			WalkActor(actor);
+			const int shapes = WalkActor(actor);
+			F4SE::log::info("[refresh] {:08X} '{}': repainted in place, {} skin-tint shapes{}", a_id, (actor->GetDisplayFullName() ? actor->GetDisplayFullName() : "?"), shapes, a_id == 0x14 ? " (player in combat, no rebuild)" : "");
 			return;
 		}
+		F4SE::log::info("[refresh] player {:08X}: Reset3D rebuild requested (not in combat)", a_id);
 		// reloadAll unloads and reloads the whole 3D, kHead puts the head in the rebuild so AttachSkinnedObject and OnHeadInitialized run again, queueReset leaves the rebuild to the game's reset queue.
 		actor->Reset3D(true, static_cast<std::uint32_t>(RE::RESET_3D_FLAGS::kHead), true, 0);
 	}
