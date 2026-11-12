@@ -3,8 +3,8 @@ Head Body Color Match 1.1.0 - Fallout 4 VR port (VR port 5)
 
 Original: mrtony - https://www.nexusmods.com/fallout4/mods/110802 (GPL-3.0 with the modding exception in EXCEPTIONS).
 This port: Fallout 4 VR 1.2.72 only, F4SE VR + VR Address Library for F4SEVR required. Built on CommonLibF4VR
-(github.com/ArthurHub/CommonLibF4VR @ 9057052). The complete source of this port, under the same licence, is at
-https://github.com/vilaherba-design/HeadBodyColorMatchVR (with CommonLibF4VR as a submodule); see F4SE/Plugins/HeadBodyColorMatch_SOURCE.txt.
+(github.com/ArthurHub/CommonLibF4VR @ 9057052). The complete source of this port is public, under the same licence, at
+https://github.com/vilaherba-design/HeadBodyColorMatchVR (tag v1.1.0-vr6; CommonLibF4VR as a submodule). Build: VS 2022 + vcpkg, run build.ps1.
 
 What changed from 1.1.0 (search "VR:" in src/main.cpp):
 - Addresses: the flat IDs, resolved through version-1-2-72-0.csv (AttachSkinnedObject 0x1CBC00, skin colour 0x5A03A0,

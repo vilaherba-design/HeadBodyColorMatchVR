@@ -35,11 +35,7 @@ $files = @{
   "F4SE/Plugins/HeadBodyColorMatch_EXCEPTIONS.txt" = "$W\EXCEPTIONS"
   "F4SE/Plugins/HeadBodyColorMatch_README.txt" = "$W\README.md"
 }
-# GPL: no nested zip (Nexus quarantines archives inside archives). A text file points to the public source of this exact build.
-$srcTxt = Join-Path $W "HeadBodyColorMatch_SOURCE.txt"
-$commit = if ($env:BUILD_COMMIT) { $env:BUILD_COMMIT } else { "see the tag or commit matching this version" }
-@("HeadBodyColorMatch is free software under the GPL-3.0 (see the LICENSE in the repository).", "Complete corresponding source of this build, including the CommonLibF4VR submodule:", "https://github.com/vilaherba-design/HeadBodyColorMatchVR", "Commit: $commit") | Set-Content -Path $srcTxt -Encoding UTF8
-$files["F4SE/Plugins/HeadBodyColorMatch_SOURCE.txt"] = $srcTxt
+# GPL: the source is linked from the README (public repo, tag v1.1.0-vr6) instead of a nested zip, which Nexus quarantines.
 foreach ($k in $files.Keys) { [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $files[$k], $k) }
 $z.Dispose()
 Get-Item $dll, $zip | Format-Table Name, Length
