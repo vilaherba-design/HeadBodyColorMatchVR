@@ -35,14 +35,7 @@ $files = @{
   "F4SE/Plugins/HeadBodyColorMatch_EXCEPTIONS.txt" = "$W\EXCEPTIONS"
   "F4SE/Plugins/HeadBodyColorMatch_README.txt" = "$W\README.md"
 }
-# GPL: the port's own source goes inside the mod as a nested zip
-$srcZip = Join-Path $W "HeadBodyColorMatch_source.zip"
-$sz = [System.IO.Compression.ZipFile]::Open($srcZip, "Create")
-foreach ($f in @("CMakeLists.txt", "vcpkg.json", "build.ps1", "README.md", "LICENSE", "EXCEPTIONS", "src/main.cpp", "src/pch.h", "data/HeadBodyColorMatch.ini")) {
-  [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($sz, (Join-Path $W $f), "HeadBodyColorMatchVR/$f")
-}
-$sz.Dispose()
-$files["F4SE/Plugins/HeadBodyColorMatch_source.zip"] = $srcZip
+# GPL: the source is linked from the README (public repo, tag v1.1.0-vr5) instead of a nested zip, which Nexus quarantines.
 foreach ($k in $files.Keys) { [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $files[$k], $k) }
 $z.Dispose()
 Get-Item $dll, $zip | Format-Table Name, Length
