@@ -1,6 +1,6 @@
 {
   "name": "headbodycolormatchvr",
-  "version-string": "1.1.0-vr5",
+  "version-string": "1.1.0-vr6",
   "dependencies": [
     "rapidcsv",
     "rsm-mmio",

@@ -23,7 +23,7 @@ if ($LASTEXITCODE) { throw "configure failed" }
 cmake --build "$W\build" --config Release -- /m /v:m
 if ($LASTEXITCODE) { throw "build failed" }
 $dll = "$W\build\Release\HeadBodyColorMatch.dll"
-$zip = Join-Path $Out "HeadBodyColorMatchVR-1.1.0-vr5.zip"
+$zip = Join-Path $Out "HeadBodyColorMatchVR-1.1.0-vr6.zip"
 if (Test-Path $zip) { Remove-Item $zip }
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 $z = [System.IO.Compression.ZipFile]::Open($zip, "Create")
@@ -35,7 +35,7 @@ $files = @{
   "F4SE/Plugins/HeadBodyColorMatch_EXCEPTIONS.txt" = "$W\EXCEPTIONS"
   "F4SE/Plugins/HeadBodyColorMatch_README.txt" = "$W\README.md"
 }
-# GPL: the source is linked from the README (public repo, tag v1.1.0-vr5) instead of a nested zip, which Nexus quarantines.
+# GPL: the source is linked from the README (public repo, tag v1.1.0-vr6) instead of a nested zip, which Nexus quarantines.
 foreach ($k in $files.Keys) { [void][System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($z, $files[$k], $k) }
 $z.Dispose()
 Get-Item $dll, $zip | Format-Table Name, Length
