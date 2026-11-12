@@ -1004,7 +1004,19 @@ namespace
 	void InstallAttachHook()
 	{
 		const auto addr = REL::ID(kAttachSkinnedObjectID).address();
-		if (std::memcmp(reinterpret_cast<const void*>(addr), kAttachPrologue.data(), kAttachPrologue.size()) != 0) {
+		const auto* code = reinterpret_cast<const std::uint8_t*>(addr);
+		if (code[0] == 0xE9) {
+			// Another plugin (BodyMorph VR loads before us) already hooked this function with a 5-byte jmp: chain to it instead of giving up.
+			// Its hook calls its own copy of the prologue, so the game's function still runs exactly once.
+			std::int32_t rel = 0;
+			std::memcpy(&rel, code + 1, sizeof(rel));
+			const auto previous = addr + 5 + static_cast<std::intptr_t>(rel);
+			g_attachOriginal = reinterpret_cast<AttachSkinnedObject_t*>(previous);
+			F4SE::GetTrampoline().write_branch<5>(addr, reinterpret_cast<std::uintptr_t>(&AttachSkinnedObject_Hook));
+			F4SE::log::info("AttachSkinnedObject hook installed at {:X}, chained to the hook another plugin installed first ({:X})", addr, previous);
+			return;
+		}
+		if (std::memcmp(code, kAttachPrologue.data(), kAttachPrologue.size()) != 0) {
 			F4SE::log::error("AttachSkinnedObject prologue mismatch at {:X}: hook NOT installed", addr);
 			LogBytes("AttachSkinnedObject", addr);
 			return;
@@ -1194,7 +1206,7 @@ namespace
 extern "C" __declspec(dllexport) constinit auto F4SEPlugin_Version = []() noexcept {
 	F4SE::PluginVersionData data{};
 	data.PluginName("HeadBodyColorMatch");
-	data.PluginVersion(REL::Version(1, 1, 0, 5));
+	data.PluginVersion(REL::Version(1, 1, 0, 6));
 	data.AuthorName("mrtony (VR port: Axel)");
 	data.UsesAddressLibrary(true);
 	data.IsLayoutDependent(true);
